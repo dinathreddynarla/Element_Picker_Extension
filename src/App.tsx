@@ -1,11 +1,12 @@
 import './App.css'
+import ElementSelector from './components/ElementSelector'
 
 function App() {
 
   return (
-    <>
-    <h1>Element Picker</h1>
-    </>
+    <div className='popup_container'>
+    <ElementSelector />
+    </div>
   )
 }
 
