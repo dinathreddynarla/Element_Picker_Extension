@@ -48,6 +48,7 @@ const handleClick = (event: MouseEvent) => {
   const target = event.target;
   if (target instanceof HTMLElement) {
     console.log("Clicked Element:", target);
+    console.log("unique Selector >>>>>>>>>>> " ,getUniqueSleector(target) )
     const rect = target.getBoundingClientRect();
     let tooltip: HTMLElement = createTooltip(
       "hello world",
@@ -113,4 +114,35 @@ function createTooltip(
   tooltipWrapper.appendChild(tooltipText);
 
   return tooltipWrapper;
+}
+
+function getUniqueSleector(element: HTMLElement): string {
+  const selectors: string[] = [];
+
+  while (element.parentElement) {
+    let currentSelector = element.tagName.toLowerCase();
+
+    if (element.id) {
+      selectors.unshift(`#${element.id}`);
+      break;
+    }
+
+    if (element.className) {
+      currentSelector += "." + element.className.trim().split(/\+s/).join(".");
+    }
+
+    const siblings = Array.from(element.parentElement.children).filter(
+      (sib) => sib.tagName === element.tagName
+    );
+
+    if (siblings.length > 1) {
+      currentSelector += `:nth-child(${siblings.indexOf(element) + 1})`;
+    }
+
+    selectors.unshift(currentSelector);
+
+    element = element.parentElement;
+  }
+
+  return selectors.join(" > ");
 }
