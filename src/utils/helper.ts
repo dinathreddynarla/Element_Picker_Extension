@@ -19,11 +19,11 @@ export async function getCurrentTab(): Promise<number | null> {
 
 //helper to send messages to a tab
 export function sendMessageToTab(tabId: number, messageType: string): void {
-  if (!tabId && !messageType) {
+  if (!tabId || !messageType) {
     console.error("tab Id and message type are required");
     return;
   }
-  
+
   chrome.tabs.sendMessage(tabId, { type: messageType, tabId }, (response) => {
     if (chrome.runtime.lastError) {
       console.error("Error sending message:", chrome.runtime.lastError.message);
@@ -31,4 +31,17 @@ export function sendMessageToTab(tabId: number, messageType: string): void {
       console.log("Message sent successfully", response);
     }
   });
+}
+
+
+// helper to remove storage of extension state of a tab, if tab is closed
+export async function removeLocalDataWithKey(key: string): Promise<void> {
+  await chrome.storage.local.remove(key);
+  console.log("remove storaged for the key ",key)
+  if (chrome.runtime.lastError) {
+    console.error(
+      "Error removing storage key:",
+      chrome.runtime.lastError.message
+    );
+  }
 }

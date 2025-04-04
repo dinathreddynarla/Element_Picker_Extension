@@ -1,4 +1,4 @@
-import { sendMessageToTab } from "../utils/helper";
+import { removeLocalDataWithKey, sendMessageToTab } from "../utils/helper";
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log("backgroud script installed");
@@ -20,4 +20,8 @@ chrome.tabs.onUpdated.addListener((tabId,changeInfo)=>{
     if(changeInfo.status === "complete"){
         sendMessageToTab(tabId,"storageUpdated")
     }
+})
+
+chrome.tabs.onRemoved.addListener(async(tabId) =>{
+  await removeLocalDataWithKey(`toggle_${tabId}`)
 })
