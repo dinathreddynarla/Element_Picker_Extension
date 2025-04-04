@@ -92,14 +92,14 @@ window.addEventListener("message", (e) => {
 
 //to check if the current window and its parent is same , if it isn't then its a iframe
 //so send a message to clear previous highlights and if if left, clear highlights in that window
-// if (window.top !== window.self) {
-//   window.document.addEventListener("mouseenter", () => {
-//     window.parent.postMessage({ action: "mouseEnteredIframe" }, "*");
-//   });
-//   window.document.addEventListener("mouseleave", () => {
-//     glowDiv.style.display = "none";
-//   });
-// }
+if (window.top !== window.self) {
+  window.document.addEventListener("mouseenter", () => {
+    window.parent.postMessage({ action: "mouseEnteredIframe" }, "*");
+  });
+  window.document.addEventListener("mouseleave", () => {
+    glowDiv.style.display = "none";
+  });
+}
 
 //function to create a tooltip with tooltip text and top, left values to position it
 function createTooltip(
@@ -163,18 +163,3 @@ function getUniqueSelector(element: HTMLElement): string {
 
   return selectors.join(" > ");
 }
-
-
-
-// //mutation observer
-// const observer = new MutationObserver((mutations) => {
-//     console.log(mutations);
-//   });
-  
-//   observer.observe(document.body, {
-//     attributes: true,
-//     childList: true,
-//     subtree: true,
-//     characterData: true,
-//   });
-  
