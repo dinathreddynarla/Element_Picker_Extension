@@ -5,16 +5,17 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: "dist",
     rollupOptions: {
       input: {
         popup: "index.html",
         background: "src/background-scripts/background.ts",
         content: "src/content-scripts/content.ts",
+        content_styles: "src/content-scripts/content.css",
       },
       output: {
         entryFileNames: "[name].js",
-        },
-    }
-  }
+        assetFileNames: "[name][extname]",
+      },
+    },
+  },
 })

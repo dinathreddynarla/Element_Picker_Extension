@@ -1,7 +1,7 @@
-let tabIdGlobal : number  ;
+let tabIdGlobal: number;
 chrome.runtime.onMessage.addListener(async (message, _, sendResponse) => {
   if (message.type === "storageUpdated" && message.tabId) {
-    tabIdGlobal = message.tabId
+    tabIdGlobal = message.tabId;
     await handleToggleStatus(message.tabId);
     sendResponse({ success: true });
     return true;
@@ -23,14 +23,7 @@ async function getToggleStatus(tabId: number): Promise<Record<string, number>> {
   }
 }
 const glowDiv = document.createElement("div");
-Object.assign(glowDiv.style, {
-  position: "absolute",
-  border: "2px solid red",
-  pointerEvents: "none",
-  transition: "all 0.1s ease-in-out",
-  zIndex: "9999",
-  display: "none",
-});
+glowDiv.classList.add("glow-div");
 document.body.appendChild(glowDiv);
 
 const handleMouseMove = (event: MouseEvent) => {
@@ -51,14 +44,18 @@ const handleMouseMove = (event: MouseEvent) => {
 
 const handleClick = (event: MouseEvent) => {
   event.preventDefault();
- 
+
   const target = event.target;
   if (target instanceof HTMLElement) {
     console.log("Clicked Element:", target);
     const rect = target.getBoundingClientRect();
-    let tooltip:HTMLElement = createTooltip("hello world" ,rect.top + window.scrollY,rect.left + window.scrollX+rect.width )
-    document.body.appendChild(tooltip)
-    console.log(tooltip)
+    let tooltip: HTMLElement = createTooltip(
+      "hello world",
+      rect.top + window.scrollY,
+      rect.left + window.scrollX + rect.width
+    );
+    document.body.appendChild(tooltip);
+    console.log(tooltip);
     removeListeners();
     chrome.storage.local.set({ [`toggle_${tabIdGlobal}`]: false });
   }
@@ -70,7 +67,7 @@ function attachListeners() {
 }
 
 function removeListeners() {
-  document.removeEventListener("mousemove", handleMouseMove, {capture: true});
+  document.removeEventListener("mousemove", handleMouseMove, { capture: true });
   document.removeEventListener("click", handleClick);
   glowDiv.style.display = "none";
 }
@@ -90,59 +87,30 @@ if (window.top !== window.self) {
   });
 }
 
+function createTooltip(
+  text: string,
+  top: number,
+  left: number
+): HTMLDivElement {
+  // Create wrapper div
+  const tooltipWrapper = document.createElement("div");
+  tooltipWrapper.classList.add("tooltip-wrapper");
+  tooltipWrapper.style.top = `${top}px`;
+  tooltipWrapper.style.left = `${left}px`;
 
-function createTooltip(text: string, top: number, left: number): HTMLDivElement {
-    // Create wrapper div
-    const tooltipWrapper = document.createElement("div");
-    tooltipWrapper.style.position = "absolute";
-    tooltipWrapper.style.display = "inline-block";
-    tooltipWrapper.style.cursor = "pointer";
-    tooltipWrapper.style.top = `${top}px`;
-    tooltipWrapper.style.left = `${left}px`;
-    
-    // Create tooltip icon
-    const tooltipIcon = document.createElement("span");
-    tooltipIcon.textContent = "❓"; 
-    tooltipIcon.style.fontSize = "16px";
-    tooltipIcon.style.border = "1px solid #ccc";
-    tooltipIcon.style.borderRadius = "50%";
-    tooltipIcon.style.padding = "2px 6px";
-    tooltipIcon.style.backgroundColor = "#f1f1f1";
+  // Create tooltip icon
+  const tooltipIcon = document.createElement("span");
+  tooltipIcon.textContent = "❓";
+  tooltipIcon.classList.add("tooltip-icon");
 
-  
-    // Create tooltip text
-    const tooltipText = document.createElement("span");
-    tooltipText.textContent = text;
-    tooltipText.style.position = "absolute";
-    tooltipText.style.padding = "5px 10px";
-    tooltipText.style.backgroundColor = "#333";
-    tooltipText.style.color = "#fff";
-    tooltipText.style.borderRadius = "4px";
-    tooltipText.style.whiteSpace = "nowrap";
-    tooltipText.style.fontSize = "12px";
-    tooltipText.style.visibility = "hidden";
-    tooltipText.style.opacity = "0";
-    tooltipText.style.transition = "opacity 0.3s ease-in-out";
-  
-  
-    // Show tooltip on hover
-    tooltipWrapper.addEventListener("mouseenter", () => {
-      tooltipText.style.visibility = "visible";
-      tooltipText.style.opacity = "1";
-    });
-  
-    // Hide tooltip on mouse leave
-    tooltipWrapper.addEventListener("mouseleave", () => {
-      tooltipText.style.visibility = "hidden";
-      tooltipText.style.opacity = "0";
-    });
-  
-    // Append elements
-    tooltipWrapper.appendChild(tooltipIcon);
-    tooltipWrapper.appendChild(tooltipText);
-  
-    return tooltipWrapper;
-  }
-  
+  // Create tooltip text
+  const tooltipText = document.createElement("span");
+  tooltipText.textContent = text;
+  tooltipText.classList.add("tooltip-text");
 
-  
+  // Append elements
+  tooltipWrapper.appendChild(tooltipIcon);
+  tooltipWrapper.appendChild(tooltipText);
+
+  return tooltipWrapper;
+}
