@@ -57,12 +57,22 @@ const handleClick = (event: MouseEvent) => {
   if (target instanceof HTMLElement) {
     console.log("Clicked Element:", target);
     console.log("unique Selector >>>>>>>>>>> ", getUniqueSelector(target));
+    const uniqueSelector: string = getUniqueSelector(target)
     const rect = target.getBoundingClientRect();
     let tooltip: HTMLElement = createTooltip(
       "hello world",
       rect.top + window.scrollY,
       rect.left + window.scrollX + rect.width
     );
+
+
+    //passing object to updateToolTipArray
+    tooltip.setAttribute('data-tooltip-for' , uniqueSelector)
+    console.log(tooltip);
+    
+
+    const updateTooltip: string = uniqueSelector
+    updateToolTipArray(updateTooltip)
     document.body.appendChild(tooltip);
     console.log(tooltip);
     removeListeners();
@@ -145,7 +155,7 @@ function getUniqueSelector(element: HTMLElement): string {
 
     //classlisr have mutliple classes, so join all of them with "."
     if (element.className) {
-        currentSelector +=  "." +element.className.trim().split(/\s+/).join(".")
+      currentSelector += "." + element.className.trim().split(/\s+/).join(".");
     }
 
     //using nth-child to perfectly select the tag among multiple siblings
@@ -163,3 +173,29 @@ function getUniqueSelector(element: HTMLElement): string {
 
   return selectors.join(" > ");
 }
+
+/////////
+const observer = new MutationObserver((mutations) => {
+  console.log(mutations);
+});
+
+observer.observe(document.body, {
+  attributes: true,
+  childList: true,
+  subtree: true,
+  characterData: true,
+});
+
+
+async function updateToolTipArray(updatedToolTip: string) {
+    try {
+      const storedData = await chrome.storage.local.get('tooltip');
+      let updatedToolTipArray: string[] = storedData.tooltip || [];
+      updatedToolTipArray.push(updatedToolTip);
+      await chrome.storage.local.set({ tooltip: updatedToolTipArray });
+      console.log("Tooltip array updated successfully.");
+    } catch (error) {
+      console.error("Error updating toolTipArray data", error);
+    }
+  }
+  
