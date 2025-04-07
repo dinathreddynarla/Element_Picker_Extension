@@ -53,7 +53,7 @@ export async function handleTooltipDelete(e: MouseEvent) {
 }
 
 //keep a map of all observed elements
-// const observedSelectors = new Set<string>();
+const observedSelectors = new Set<string>();
 
 //function to render tooltip if visible
 export function renderTooltipIfVisible(
@@ -64,12 +64,12 @@ export function renderTooltipIfVisible(
   let existingTooltip: HTMLElement | null = document.querySelector(
     `[data-tooltip-for="${selector}"]`
   );
-  // if (observedSelectors.has(selector)){
-  //   // console.log("tacking started" , element);
+  if (observedSelectors.has(selector) && existingTooltip){
+    // console.log("tacking started" , element);
     
-  //   trackTooltipPosition(element, existingTooltip as HTMLElement);
-  //   return;
-  // }
+    trackTooltipPosition(element, existingTooltip as HTMLElement);
+    return;
+  }
 
   const observer = new IntersectionObserver(([entry]) => {
     
@@ -88,10 +88,10 @@ export function renderTooltipIfVisible(
         document.body.appendChild(tooltip);
         trackTooltipPosition(element, tooltip);
       }
-      else{
-        console.log("hello without existing track")
-        trackTooltipPosition(element, existingTooltip);
-      }
+      // else{
+      //   console.log("hello without existing track")
+      //   trackTooltipPosition(element, existingTooltip);
+      // }
     } else {
       if (existingTooltip) {
         existingTooltip.dispatchEvent(new Event("remove"));
@@ -100,5 +100,5 @@ export function renderTooltipIfVisible(
     }
   });
   observer.observe(element);
-  // observedSelectors.add(selector);
+  observedSelectors.add(selector);
 }
