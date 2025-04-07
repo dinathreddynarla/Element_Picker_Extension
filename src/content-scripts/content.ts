@@ -1,3 +1,11 @@
+import {  trackTooltipPosition } from "../utils/trackTooltipPosition";
+import { getUniqueSelector } from "../utils/uniqueSelector";
+import { updateToolTipArray } from "../utils/tooltipStorage";
+import { createTooltip ,handleTooltipDelete } from "../utils/tooltipDOM";
+import { startObserver, stopObserver } from "../utils/mutationTooltipCreation";
+
+startObserver()
+
 let tabIdGlobal: number;
 
 //div to hover as a highlighter
@@ -7,18 +15,37 @@ document.body.appendChild(glowDiv);
 
 //listen message to get toggleupdate or tab update
 chrome.runtime.onMessage.addListener(async (message, _, sendResponse) => {
-  if (message.type === "storageUpdated" && message.tabId) {
-    tabIdGlobal = message.tabId;
-    await handleToggleStatus(message.tabId);
-    sendResponse({ success: true });
-    return true;
+  switch (message.type) {
+    case "storageUpdated":
+      if (message.tabId) {
+        tabIdGlobal = message.tabId;
+        await handleToggleStatus(message.tabId);
+        sendResponse({ success: true });
+        return true;
+      }
+      break;
+
+    case "toggleDeleteMode":
+      if (message.action === "enable") {
+        attachDeleteModeListeners();
+      } else if (message.action === "disable") {
+        removeDeleteModeListeners();
+      } else {
+        console.warn("action unknown for toggleDeleteMode:", message.action);
+      }
+      break;
+
+    default:
+      console.warn("Unknown message type:", message.type);
   }
 });
 
 //function to handle toggle based on  status from storage(local)
 async function handleToggleStatus(tabId: number) {
   const toggleStatus = await getToggleStatus(tabId);
-  Object.values(toggleStatus)[0] ? attachListeners() : removeListeners();
+  Object.values(toggleStatus)[0]
+    ? attachToolTipListeners()
+    : removeToolTipListeners();
 }
 
 // function to get the togle status of that tab from storage(local)
@@ -55,42 +82,59 @@ const handleClick = (event: MouseEvent) => {
 
   const target = event.target;
   if (target instanceof HTMLElement) {
-    console.log("Clicked Element:", target);
-    console.log("unique Selector >>>>>>>>>>> ", getUniqueSelector(target));
-    const uniqueSelector: string = getUniqueSelector(target)
+    const uniqueSelector: string = getUniqueSelector(target);
     const rect = target.getBoundingClientRect();
     let tooltip: HTMLElement = createTooltip(
       "hello world",
       rect.top + window.scrollY,
       rect.left + window.scrollX + rect.width
     );
-
-
+    trackTooltipPosition(target, tooltip);
     //passing object to updateToolTipArray
-    tooltip.setAttribute('data-tooltip-for' , uniqueSelector)
-    console.log(tooltip);
-    
-
-    const updateTooltip: string = uniqueSelector
-    updateToolTipArray(updateTooltip)
+    tooltip.setAttribute("data-tooltip-for", uniqueSelector);
+    updateToolTipArray(uniqueSelector);
     document.body.appendChild(tooltip);
-    console.log(tooltip);
-    removeListeners();
     chrome.storage.local.set({ [`toggle_${tabIdGlobal}`]: false });
+    
   }
 };
 
 //attach listeners based on toggle status
-function attachListeners() {
+function attachToolTipListeners() {
   document.addEventListener("mousemove", handleMouseMove, { capture: true });
   document.addEventListener("click", handleClick);
 }
 
 //remove listeners based on toggle status and if a element is selected
-function removeListeners() {
+function removeToolTipListeners() {
   document.removeEventListener("mousemove", handleMouseMove, { capture: true });
   document.removeEventListener("click", handleClick);
   glowDiv.style.display = "none";
+}
+
+function attachDeleteModeListeners() {
+  chrome.storage.local.set({ [`toggle_${tabIdGlobal}`]: false });
+  stopObserver()
+  const tooltips = document.querySelectorAll("[data-tooltip-for]");
+
+  tooltips.forEach((tooltip) => {
+    if (tooltip instanceof HTMLElement) {
+      tooltip.addEventListener("click", handleTooltipDelete);
+      tooltip.classList.add("deletable-tooltip");
+    }
+  });
+}
+
+export function removeDeleteModeListeners() {
+  startObserver()
+  const tooltips = document.querySelectorAll("[data-tooltip-for]");
+
+  tooltips.forEach((tooltip) => {
+    if (tooltip instanceof HTMLElement) {
+      tooltip.removeEventListener("click", handleTooltipDelete); // if needed, store the handler reference
+      tooltip.classList.remove("deletable-tooltip");
+    }
+  });
 }
 
 //listener to recieve message from page to remove any highlights left in parent before entering iframe
@@ -111,91 +155,9 @@ if (window.top !== window.self) {
   });
 }
 
-//function to create a tooltip with tooltip text and top, left values to position it
-function createTooltip(
-  text: string,
-  top: number,
-  left: number
-): HTMLDivElement {
-  // Create wrapper div
-  const tooltipWrapper = document.createElement("div");
-  tooltipWrapper.classList.add("tooltip-wrapper");
-  tooltipWrapper.style.top = `${top}px`;
-  tooltipWrapper.style.left = `${left}px`;
-
-  // Create tooltip icon
-  const tooltipIcon = document.createElement("span");
-  tooltipIcon.textContent = "❓";
-  tooltipIcon.classList.add("tooltip-icon");
-
-  // Create tooltip text
-  const tooltipText = document.createElement("span");
-  tooltipText.textContent = text;
-  tooltipText.classList.add("tooltip-text");
-
-  // Append elements
-  tooltipWrapper.appendChild(tooltipIcon);
-  tooltipWrapper.appendChild(tooltipText);
-
-  return tooltipWrapper;
-}
-
-//function to generate unique selector of a particular element
-function getUniqueSelector(element: HTMLElement): string {
-  const selectors: string[] = [];
-
-  while (element.parentElement) {
-    let currentSelector = element.tagName.toLowerCase();
-
-    //check for an id (id is unique)
-    if (element.id) {
-      selectors.unshift(`#${element.id}`);
-      break;
-    }
-
-    //classlisr have mutliple classes, so join all of them with "."
-    if (element.className) {
-      currentSelector += "." + element.className.trim().split(/\s+/).join(".");
-    }
-
-    //using nth-child to perfectly select the tag among multiple siblings
-    const allSiblings = Array.from(element.parentElement.children);
-    const index = allSiblings.indexOf(element) + 1;
-
-    if (index > 1) {
-      currentSelector += `:nth-child(${index})`;
-    }
-
-    //adding selectors form front side, so that we dont disrupt the path
-    selectors.unshift(currentSelector);
-    element = element.parentElement;
-  }
-
-  return selectors.join(" > ");
-}
-
-/////////
-const observer = new MutationObserver((mutations) => {
-  console.log(mutations);
-});
-
-observer.observe(document.body, {
-  attributes: true,
-  childList: true,
-  subtree: true,
-  characterData: true,
-});
 
 
-async function updateToolTipArray(updatedToolTip: string) {
-    try {
-      const storedData = await chrome.storage.local.get('tooltip');
-      let updatedToolTipArray: string[] = storedData.tooltip || [];
-      updatedToolTipArray.push(updatedToolTip);
-      await chrome.storage.local.set({ tooltip: updatedToolTipArray });
-      console.log("Tooltip array updated successfully.");
-    } catch (error) {
-      console.error("Error updating toolTipArray data", error);
-    }
-  }
-  
+
+
+
+

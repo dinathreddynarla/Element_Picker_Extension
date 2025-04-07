@@ -12,6 +12,7 @@
       "matches": ["<all_urls>"],
       "js": ["content.js"],
       "css": ["content_styles.css"],
+      "type": "module",
       "all_frames": true
     }
   ],

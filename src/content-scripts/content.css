@@ -38,3 +38,9 @@
   visibility: visible;
   opacity: 1;
 }
+
+.deletable-tooltip {
+  outline: 2px dashed red;
+  cursor: pointer;
+}
+
