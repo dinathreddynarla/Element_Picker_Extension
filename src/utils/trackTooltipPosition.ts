@@ -5,9 +5,10 @@ export function trackTooltipPosition(
 ): () => void {
   const updatePosition = () => {
     const rect = target.getBoundingClientRect();
+    console.log("hello tracking");
+    
     tooltip.style.top = `${rect.top + window.scrollY}px`;
     tooltip.style.left = `${rect.left + window.scrollX + rect.width}px`;
-    console.log(performance.now(),"hello>>>>>>>>>")
   };
 
   updatePosition();
@@ -16,7 +17,6 @@ export function trackTooltipPosition(
 
   const cleanup = () => {
     console.log("cleanup success for ",target);
-    
     window.removeEventListener("scroll", updatePosition, true);
     window.removeEventListener("resize", updatePosition);
   };

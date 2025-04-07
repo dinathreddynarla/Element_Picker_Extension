@@ -1,5 +1,5 @@
 import { removeDeleteModeListeners } from "../content-scripts/content";
-import { getSafeTooltipArray } from "./tooltipStorage";
+import { getSafeTooltipArray, ToolTip } from "./tooltipStorage";
 import { trackTooltipPosition } from "./trackTooltipPosition";
 
 //function to create a tooltip with tooltip text and top, left values to position it
@@ -40,49 +40,65 @@ export async function handleTooltipDelete(e: MouseEvent) {
     tooltip.dispatchEvent(new Event("remove"));
     tooltip.remove();
 
-
     // Update local storage to remove this selector
-    const tooltipArray: string[] = await getSafeTooltipArray();
-    const updatedArray = tooltipArray.filter((item) => item !== selector);
+    const tooltipArray: ToolTip[] = await getSafeTooltipArray();
+    const updatedArray = tooltipArray.filter(
+      (item) => item.selector !== selector
+    );
     await chrome.storage.local.set({ tooltip: updatedArray });
 
     console.log(`Tooltip for ${selector} deleted.`);
-    removeDeleteModeListeners()
+    removeDeleteModeListeners();
   }
 }
 
 //keep a map of all observed elements
-const observedSelectors = new Set<string>();
+// const observedSelectors = new Set<string>();
 
 //function to render tooltip if visible
-export function renderTooltipIfVisible(element: HTMLElement, selector: string) {
-  if (observedSelectors.has(selector)) return;
+export function renderTooltipIfVisible(
+  element: HTMLElement,
+  selector: string,
+  content: string
+) {
+  let existingTooltip: HTMLElement | null = document.querySelector(
+    `[data-tooltip-for="${selector}"]`
+  );
+  // if (observedSelectors.has(selector)){
+  //   // console.log("tacking started" , element);
+    
+  //   trackTooltipPosition(element, existingTooltip as HTMLElement);
+  //   return;
+  // }
 
-  const observer = new IntersectionObserver((entries, obs) => {
-    entries.forEach((entry) => {
-      const existingTooltip = document.querySelector(
-        `[data-tooltip-for="${selector}"]`
-      );
-
-      if (entry.isIntersecting) {
-        if (!existingTooltip) {
-          const rect = element.getBoundingClientRect();
-          const tooltip = createTooltip(
-            "hello world",
-            rect.top + window.scrollY,
-            rect.left + window.scrollX + rect.width
-          );
-          tooltip.setAttribute("data-tooltip-for", selector);
-          document.body.appendChild(tooltip);
-          trackTooltipPosition(element,tooltip)
-        }
-
-        //stop observing once shown
-        obs.unobserve(entry.target);
+  const observer = new IntersectionObserver(([entry]) => {
+    
+    console.log(existingTooltip , ">>>>>>tooltip");
+    
+    if (entry.isIntersecting) {
+      if (!existingTooltip) {
+        const rect = element.getBoundingClientRect();
+        const tooltip = createTooltip(
+          content,
+          rect.top + window.scrollY,
+          rect.left + window.scrollX + rect.width
+        );
+        existingTooltip = tooltip;
+        tooltip.setAttribute("data-tooltip-for", selector);
+        document.body.appendChild(tooltip);
+        trackTooltipPosition(element, tooltip);
       }
-    });
+      else{
+        console.log("hello without existing track")
+        trackTooltipPosition(element, existingTooltip);
+      }
+    } else {
+      if (existingTooltip) {
+        existingTooltip.dispatchEvent(new Event("remove"));
+        existingTooltip.remove();
+      }
+    }
   });
-
   observer.observe(element);
-  observedSelectors.add(selector);
+  // observedSelectors.add(selector);
 }

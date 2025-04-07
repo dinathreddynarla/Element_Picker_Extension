@@ -82,17 +82,22 @@ const handleClick = (event: MouseEvent) => {
 
   const target = event.target;
   if (target instanceof HTMLElement) {
-    const uniqueSelector: string = getUniqueSelector(target);
+    let content = prompt("enter tooltip text")?.trim() as string;
+    if(content.length == 0){
+      content = "This a tooltip"
+    }
+    const path = window.location.pathname
+    const selector: string = getUniqueSelector(target);
     const rect = target.getBoundingClientRect();
     let tooltip: HTMLElement = createTooltip(
-      "hello world",
+      content,
       rect.top + window.scrollY,
       rect.left + window.scrollX + rect.width
     );
     trackTooltipPosition(target, tooltip);
     //passing object to updateToolTipArray
-    tooltip.setAttribute("data-tooltip-for", uniqueSelector);
-    updateToolTipArray(uniqueSelector);
+    tooltip.setAttribute("data-tooltip-for", selector);
+    updateToolTipArray({selector , content , path});
     document.body.appendChild(tooltip);
     chrome.storage.local.set({ [`toggle_${tabIdGlobal}`]: false });
     

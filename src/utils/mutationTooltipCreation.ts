@@ -1,7 +1,7 @@
 import { restoreTooltipsFromStorage } from "./tooltipStorage";
 
 //mutation observer
-const persistentObserver = new MutationObserver(() => {
+const mutationObserver = new MutationObserver(() => {
     restoreTooltipsFromStorage();
   });
   
@@ -9,7 +9,7 @@ const persistentObserver = new MutationObserver(() => {
   export function startObserver() {
       console.log("hello mutation started");
       
-      persistentObserver.observe(document.body, {
+      mutationObserver.observe(document.body, {
         attributes: true,
         childList: true,
         subtree: true,
@@ -21,6 +21,6 @@ const persistentObserver = new MutationObserver(() => {
   export function stopObserver() {
       console.log("hello mutation stopped");
       
-      persistentObserver.disconnect()
+      mutationObserver.disconnect()
   }
   

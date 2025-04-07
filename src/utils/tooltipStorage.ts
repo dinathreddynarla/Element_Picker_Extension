@@ -1,33 +1,37 @@
 import { renderTooltipIfVisible } from "./tooltipDOM";
 
+//type for tooltip
+export type ToolTip = {
+  selector :string,
+  content : string,
+  path : string
+}
 //helper to get proper tooltip array of strings
-export async function getSafeTooltipArray(): Promise<string[]> {
+export async function getSafeTooltipArray(): Promise<ToolTip[]> {
   try {
-    const { tooltip } = await chrome.storage.local.get("tooltip");
-
-    if (
-      Array.isArray(tooltip) &&
-      tooltip.every((item) => typeof item === "string")
-    ) {
-      return tooltip;
+    let { tooltip } = await chrome.storage.local.get("tooltip");
+    let path = window.location.pathname
+    if(tooltip){
+      tooltip = tooltip.filter((item:ToolTip)=> item.path == path)
+    return tooltip;
     }
-
-    console.warn(
-      "Tooltip data is not a valid string array. Returning empty array."
-    );
     return [];
+
   } catch (err) {
     console.error("Error fetching tooltip array:", err);
     return [];
   }
 }
-
 //function to update tooltip array
-export async function updateToolTipArray(updatedToolTip: string) {
+export async function updateToolTipArray(updatedToolTip: ToolTip) {
   try {
-    let ToolTipArray: string[] = await getSafeTooltipArray();
+    let ToolTipArray: ToolTip[] = await getSafeTooltipArray();
 
-    if (!ToolTipArray.includes(updatedToolTip)) {
+    const exists = ToolTipArray.some(
+      (tooltip) => tooltip.selector === updatedToolTip.selector
+    );
+
+    if (!exists) {
       ToolTipArray.push(updatedToolTip);
       await chrome.storage.local.set({ tooltip: ToolTipArray });
       console.log("Tooltip array updated successfully.");
@@ -39,28 +43,20 @@ export async function updateToolTipArray(updatedToolTip: string) {
   }
 }
 
+
 //function to get tooltips using helper for safer tooltip array of strings
 export async function restoreTooltipsFromStorage(): Promise<void> {
   console.log("restoreTooltip triggered");
-  const tooltipArray: string[] = await getSafeTooltipArray();
+  const tooltipArray: ToolTip[] = await getSafeTooltipArray();
   if(tooltipArray.length == 0 ){
   console.log("tooltip array is empty");
     return;
   }
-  tooltipArray.forEach((selector: string): void => {
-    const element = document.querySelector(selector) as HTMLElement | null;
+  tooltipArray.forEach((tooltip: ToolTip): void => {
+    const element = document.querySelector(tooltip.selector) as HTMLElement | null;
 
     if (element) {
-      renderTooltipIfVisible(element, selector);
-    } else {
-      // element not in DOM , but if tooltip is there remove it
-      const existingTooltip = document.querySelector(
-        `[data-tooltip-for="${selector}"]`
-      );
-      if (existingTooltip instanceof HTMLElement) {
-        existingTooltip.dispatchEvent(new Event("remove"));
-        existingTooltip.remove();
-      }
-    }
+      renderTooltipIfVisible(element, tooltip.selector, tooltip.content);
+    } 
   });
 }
