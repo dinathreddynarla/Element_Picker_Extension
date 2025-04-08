@@ -1,10 +1,11 @@
 import {  trackTooltipPosition } from "../utils/trackTooltipPosition";
 import { getUniqueSelector } from "../utils/uniqueSelector";
-import { updateToolTipArray } from "../utils/tooltipStorage";
+import { restoreTooltipsFromStorage, updateToolTipArray } from "../utils/tooltipStorage";
 import { createTooltip ,handleTooltipDelete } from "../utils/tooltipDOM";
-import { startObserver, stopObserver } from "../utils/mutationTooltipCreation";
+import { startObserver,stopObserver } from "../utils/tooltipStorage";
 
-startObserver()
+
+restoreTooltipsFromStorage()
 
 let tabIdGlobal: number;
 

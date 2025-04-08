@@ -6,6 +6,8 @@ export type ToolTip = {
   content : string,
   path : string
 }
+
+let tooltips : ToolTip[];
 //helper to get proper tooltip array of strings
 export async function getSafeTooltipArray(): Promise<ToolTip[]> {
   try {
@@ -52,11 +54,36 @@ export async function restoreTooltipsFromStorage(): Promise<void> {
   console.log("tooltip array is empty");
     return;
   }
-  tooltipArray.forEach((tooltip: ToolTip): void => {
+  tooltips = tooltipArray;
+  startObserver()
+
+}
+
+
+const mutationObserver = new MutationObserver(() => {
+  tooltips.forEach((tooltip: ToolTip): void => {
     const element = document.querySelector(tooltip.selector) as HTMLElement | null;
 
     if (element) {
       renderTooltipIfVisible(element, tooltip.selector, tooltip.content);
     } 
   });
+});
+
+export function startObserver() {
+  console.log("hello mutation started");
+  
+  mutationObserver.observe(document.body, {
+    attributes: true,
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
+}
+
+//function to stop observer for deletion
+export function stopObserver() {
+  console.log("hello mutation stopped");
+  
+  mutationObserver.disconnect()
 }
