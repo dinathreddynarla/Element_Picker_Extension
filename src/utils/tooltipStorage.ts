@@ -1,5 +1,3 @@
-import { renderTooltipIfVisible } from "./tooltipDOM";
-
 //type for tooltip
 export type ToolTip = {
   selector :string,
@@ -7,14 +5,13 @@ export type ToolTip = {
   path : string
 }
 
-let tooltips : ToolTip[];
-//helper to get proper tooltip array of strings
 export async function getSafeTooltipArray(): Promise<ToolTip[]> {
   try {
     let { tooltip } = await chrome.storage.local.get("tooltip");
     let path = window.location.pathname
     if(tooltip){
       tooltip = tooltip.filter((item:ToolTip)=> item.path == path)
+      console.log(tooltip)
     return tooltip;
     }
     return [];
@@ -27,8 +24,9 @@ export async function getSafeTooltipArray(): Promise<ToolTip[]> {
 //function to update tooltip array
 export async function updateToolTipArray(updatedToolTip: ToolTip) {
   try {
-    let ToolTipArray: ToolTip[] = await getSafeTooltipArray();
-
+    let { tooltip } = await chrome.storage.local.get("tooltip");
+    let ToolTipArray: ToolTip[] = tooltip
+    console.log(ToolTipArray,updatedToolTip)
     const exists = ToolTipArray.some(
       (tooltip) => tooltip.selector === updatedToolTip.selector
     );
@@ -37,6 +35,7 @@ export async function updateToolTipArray(updatedToolTip: ToolTip) {
       ToolTipArray.push(updatedToolTip);
       await chrome.storage.local.set({ tooltip: ToolTipArray });
       console.log("Tooltip array updated successfully.");
+      console.log(ToolTipArray)
     } else {
       console.log("Tooltip already exists. Skipping update.");
     }
@@ -54,36 +53,4 @@ export async function restoreTooltipsFromStorage(): Promise<void> {
   console.log("tooltip array is empty");
     return;
   }
-  tooltips = tooltipArray;
-  startObserver()
-
-}
-
-
-const mutationObserver = new MutationObserver(() => {
-  tooltips.forEach((tooltip: ToolTip): void => {
-    const element = document.querySelector(tooltip.selector) as HTMLElement | null;
-
-    if (element) {
-      renderTooltipIfVisible(element, tooltip.selector, tooltip.content);
-    } 
-  });
-});
-
-export function startObserver() {
-  console.log("hello mutation started");
-  
-  mutationObserver.observe(document.body, {
-    attributes: true,
-    childList: true,
-    subtree: true,
-    characterData: true,
-  });
-}
-
-//function to stop observer for deletion
-export function stopObserver() {
-  console.log("hello mutation stopped");
-  
-  mutationObserver.disconnect()
 }

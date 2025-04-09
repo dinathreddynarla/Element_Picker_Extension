@@ -1,11 +1,6 @@
-import {  trackTooltipPosition } from "../utils/trackTooltipPosition";
 import { getUniqueSelector } from "../utils/uniqueSelector";
-import { restoreTooltipsFromStorage, updateToolTipArray } from "../utils/tooltipStorage";
-import { createTooltip ,handleTooltipDelete } from "../utils/tooltipDOM";
-import { startObserver,stopObserver } from "../utils/tooltipStorage";
-
-
-restoreTooltipsFromStorage()
+import { getSafeTooltipArray, updateToolTipArray } from "../utils/tooltipStorage";
+import { handleTooltipDelete, observeTooltipVisibility } from "./TooltipManager";
 
 let tabIdGlobal: number;
 
@@ -25,17 +20,15 @@ chrome.runtime.onMessage.addListener(async (message, _, sendResponse) => {
         return true;
       }
       break;
-
-    case "toggleDeleteMode":
-      if (message.action === "enable") {
-        attachDeleteModeListeners();
-      } else if (message.action === "disable") {
-        removeDeleteModeListeners();
-      } else {
-        console.warn("action unknown for toggleDeleteMode:", message.action);
-      }
-      break;
-
+      case "toggleDeleteMode":
+        if (message.action === "enable") {
+          attachDeleteModeListeners();
+        } else if (message.action === "disable") {
+          removeDeleteModeListeners();
+        } else {
+          console.warn("action unknown for toggleDeleteMode:", message.action);
+        }
+        break;
     default:
       console.warn("Unknown message type:", message.type);
   }
@@ -89,19 +82,9 @@ const handleClick = (event: MouseEvent) => {
     }
     const path = window.location.pathname
     const selector: string = getUniqueSelector(target);
-    const rect = target.getBoundingClientRect();
-    let tooltip: HTMLElement = createTooltip(
-      content,
-      rect.top + window.scrollY,
-      rect.left + window.scrollX + rect.width
-    );
-    trackTooltipPosition(target, tooltip);
-    //passing object to updateToolTipArray
-    tooltip.setAttribute("data-tooltip-for", selector);
+    observeTooltipVisibility(selector,target,content)
     updateToolTipArray({selector , content , path});
-    document.body.appendChild(tooltip);
-    chrome.storage.local.set({ [`toggle_${tabIdGlobal}`]: false });
-    
+    chrome.storage.local.set({ [`toggle_${tabIdGlobal}`]: false });   
   }
 };
 
@@ -118,27 +101,24 @@ function removeToolTipListeners() {
   glowDiv.style.display = "none";
 }
 
+
 function attachDeleteModeListeners() {
   chrome.storage.local.set({ [`toggle_${tabIdGlobal}`]: false });
-  stopObserver()
   const tooltips = document.querySelectorAll("[data-tooltip-for]");
 
   tooltips.forEach((tooltip) => {
     if (tooltip instanceof HTMLElement) {
       tooltip.addEventListener("click", handleTooltipDelete);
-      tooltip.classList.add("deletable-tooltip");
     }
   });
 }
 
 export function removeDeleteModeListeners() {
-  startObserver()
   const tooltips = document.querySelectorAll("[data-tooltip-for]");
 
   tooltips.forEach((tooltip) => {
     if (tooltip instanceof HTMLElement) {
-      tooltip.removeEventListener("click", handleTooltipDelete); // if needed, store the handler reference
-      tooltip.classList.remove("deletable-tooltip");
+      tooltip.removeEventListener("click", handleTooltipDelete);
     }
   });
 }
@@ -162,8 +142,24 @@ if (window.top !== window.self) {
 }
 
 
+const observedElements = new Set<Element>();
 
+const TooltipManager = async () => {
+  const tooltipArray = await getSafeTooltipArray();
 
+  tooltipArray.forEach(({ selector, content }) => {
+    const target = document.querySelector(selector);
+    if (!target) return;
+    if (observedElements.has(target)) {
+      console.log("Already observing:", selector);
+      return;
+    }
 
+    observedElements.add(target);
+    console.log("Observing target:", selector);
 
+   observeTooltipVisibility(selector,target,content)
+  });
+};
 
+TooltipManager()
