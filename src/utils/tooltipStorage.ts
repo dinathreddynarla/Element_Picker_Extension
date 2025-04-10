@@ -25,9 +25,8 @@ export async function getSafeTooltipArray(): Promise<ToolTip[]> {
 export async function updateToolTipArray(updatedToolTip: ToolTip) {
   try {
     let { tooltip } = await chrome.storage.local.get("tooltip");
-    let ToolTipArray: ToolTip[] = tooltip
-    console.log(ToolTipArray,updatedToolTip)
-    const exists = ToolTipArray.some(
+    let ToolTipArray: ToolTip[] = tooltip || [];
+    const exists = ToolTipArray.find(
       (tooltip) => tooltip.selector === updatedToolTip.selector
     );
 

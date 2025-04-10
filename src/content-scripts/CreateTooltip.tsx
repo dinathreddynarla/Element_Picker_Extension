@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Popper, Tooltip, IconButton } from "@mui/material";
+import { VirtualElement } from "@popperjs/core";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 
 interface CreateTooltipProps {
-  target: Element | null;
+  target: Element | VirtualElement | null;
   content: string;
   selector: string;
 }
@@ -13,7 +14,7 @@ const CreateTooltip: React.FC<CreateTooltipProps> = ({
   content,
   selector,
 }) => {
-  const [anchorEl, setAnchorEl] = useState<Element | null>(null);
+  const [anchorEl, setAnchorEl] = useState<Element | VirtualElement | null>(null);
 
   useEffect(() => {
     if (target) setAnchorEl(target);

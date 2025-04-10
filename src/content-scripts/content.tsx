@@ -79,7 +79,7 @@ const handleClick = (event: MouseEvent) => {
     let content = prompt("enter tooltip text")?.trim() as string;
     if(content.length == 0){
       content = "This a tooltip"
-    }
+     }
     const path = window.location.pathname
     const selector: string = getUniqueSelector(target);
     observeTooltipVisibility(selector,target,content)
